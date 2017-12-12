@@ -1,10 +1,10 @@
 // TODO:
-// 1 - Add support to save information, need to search for some good database
-// for this use-case
-//
+// 1 - Really need a database
+// 2 - Chat is bad, can inject javascript
 var express = require('express');
 var app = express();
 var serv = require('http').Server(app);
+const portserv = 2000
 var io = require('socket.io')(serv,{});
 
 // Using Express. Probably will change in the future
@@ -139,13 +139,21 @@ io.sockets.on('connection', function(socket){
   socket.id = Math.random();
   SOCKET_LIST[socket.id] = socket;
   Player.onConnect(socket);
-  // When disconnected delete information in the two list
+  // Handling chat
+  socket.on('sendMsgToServer', function(data){
+    var playerName = ('' + socket.id).slice(2,7);
+    for(var i in SOCKET_LIST){
+      SOCKET_LIST[i].emit('addToChat', '<b>' + playerName + '</b>: ' + data);
+    }
+  });
+  // When disconnected delete list entry
   socket.on('disconnect', function(){
     delete SOCKET_LIST[socket.id];
     Player.onDisconnect(socket);
   });
 });
 
+// Looping
 setInterval(function(){
   var pack = {
     player:Player.update(),
@@ -158,5 +166,5 @@ setInterval(function(){
   }
 },1000/30)
 
-serv.listen(2000);
-console.log('Servidor iniciado.')
+serv.listen(portserv);
+console.log('Server Started, port: ' + portserv)
